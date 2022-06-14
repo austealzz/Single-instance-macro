@@ -7,4 +7,4 @@ Single-Instance Macro
 "fork" of [ronkzinho's single instance macro](https://gist.github.com/ronkzinho/319f328bbaf246ef3b82b3a5b864ebdc), [and used ravalles code too](https://github.com/joe-ldp)
 
 
-(name improvement soon)
+(name improvement soon i swear)
