@@ -68,6 +68,7 @@ MsgBox, Press Control P to widen your game :)
 WinActivate, Minecraft* 1.16.1
 
 GetControls()
+GetSettings()
 
 Widen() {
     newHeight := Floor(A_ScreenHeight / 2.5)
@@ -165,6 +166,8 @@ Reset()
       ResetSound()
    }
    Else {
+      ResetSettings()
+      Sleep, 890
       Send, {Blind}{Esc}+{Tab}{Enter}
       if (ResetSounds)
       ResetSound()
@@ -200,7 +203,6 @@ Setup()
 }
 
 ResetSettingsOnWorldLoad() {
-    Sleep, 100
     GetSettings()
     fovPresses := (110 - FOV) * 143 / 80
     renderPresses := (32 - renderDistance) * 143 / 30
@@ -212,14 +214,14 @@ ResetSettingsOnWorldLoad() {
             SetKeyDelay, 0
             ControlSend,, {Blind}{Right 143}, Minecraft*
             ControlSend,, {Blind}{Left %fovPresses%}, Minecraft*
-            SetKeyDelay, 0
+            SetKeyDelay, 1
         }
         ControlSend,, {Blind}{Tab 5}{Enter}{Tab 4}, Minecraft*
         if (renderDistance != currentRenderDistance) {
             SetKeyDelay, 0
             ControlSend,, {Blind}{Right 143}, Minecraft*
             ControlSend,, {Blind}{Left %renderPresses%}, Minecraft*
-            SetKeyDelay, 0
+            SetKeyDelay, 1
         }
         if (entityDistance != currentEntityDistance) {
             ControlSend,, {Blind}{Tab 13}, Minecraft*
@@ -231,44 +233,40 @@ ResetSettingsOnWorldLoad() {
         ControlSend,, {Blind}{Esc}, Minecraft*
     }
     SetKeyDelay, 0
-
     SensPresses := ceil(mouseSensitivity/1.408)
     ControlSend,, {Blind}{Esc}{Tab 6}{enter}{Tab 7}{enter}{tab}{enter}{tab}{Left 150}{Right %SensPresses%}{Esc 3}, Minecraft*
     Sleep, 200
-    ControlSend,, {f3 down}{Esc}{F3 up}, Minecraft*
+    ControlSend,, {F3 down}{Esc}{F3 up}, Minecraft*
 }
 
+
 ResetSettings() {
+    global performanceMethod, lowRender, renderDistance, entityDistance, FOV
     GetSettings()
     fovPresses := (110 - FOV) * 143 / 80
-    renderPresses := (32 - renderDistance) * 143 / 30
+    desiredRd := performanceMethod == "S" ? lowRender : renderDistance
+    renderPresses := desiredRd - 2
     entityPresses := (5 - entityDistance) * 143 / 4.5
-    SetKeyDelay, 1
-    if (FOV != (options.fov * 40 + 70) || renderDistance != options.renderDistance || entityDistance != options.entityDistanceScaling) {
+    SetKeyDelay, 0
+    if (desiredRd != settings.renderDistance) {
+        ControlSend,, {Blind}{Shift down}{F3 down}{F 32}{F3 up}{Shift up}, Minecraft*
+        ControlSend,, {Blind}{F3 down}{F %renderPresses%}{D}{F3 up}, Minecraft*
+    }
+    if (FOV != (settings.fov * 40 + 70) || entityDistance != settings.entityDistanceScaling) {
         ControlSend,, {Blind}{Esc}{Tab 6}{Enter}{Tab}, Minecraft*
         if (FOV != currentFOV) {
-            SetKeyDelay, 0
             ControlSend,, {Blind}{Right 143}, Minecraft*
             ControlSend,, {Blind}{Left %fovPresses%}, Minecraft*
-            SetKeyDelay, 0
         }
-        ControlSend,, {Blind}{Tab 5}{Enter}{Tab 4}, Minecraft*
-        if (renderDistance != currentRenderDistance) {
-            SetKeyDelay, 0
-            ControlSend,, {Blind}{Right 143}, Minecraft*
-            ControlSend,, {Blind}{Left %renderPresses%}, Minecraft*
-            SetKeyDelay, 0
-        }
-        if (entityDistance != currentEntityDistance) {
-            ControlSend,, {Blind}{Tab 13}, Minecraft*
+        if (entityDistance != settings.entityDistanceScaling) {
+            ControlSend,, {Blind}{Tab 5}{Enter}{Tab 17}, Minecraft*
             SetKeyDelay, 0
             ControlSend,, {Blind}{Right 143}, Minecraft*
             ControlSend,, {Blind}{Left %entityPresses%}, Minecraft*
-            ControlSend,, {Blind}{Esc}, Minecraft*
         }
-        ControlSend,, {Blind}{Esc}, Minecraft*
+        ControlSend,, {Blind}{Esc 2}, Minecraft*
     }
-    SetKeyDelay, 0
+
 
     SensPresses := ceil(mouseSensitivity/1.408)
     ControlSend,, {Blind}{Esc}{Tab 6}{enter}{Tab 7}{enter}{tab}{enter}{tab}{Left 150}{Right %SensPresses%}{Esc 3}, Minecraft*
@@ -358,7 +356,7 @@ waitForGame:
    return
 
 SetTimer, waitForGame, Off
-#IfWinActive, Minecraft*
+#IfWinExist, Minecraft*
 {
    U::
    Reset()
