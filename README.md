@@ -1,4 +1,4 @@
-# ridgeair
+# macro
 Single-Instance Macro
 
 
