@@ -115,8 +115,19 @@ CheckLogs(key)
 
 CheckJoinedWorld()
 {
-   return CheckLogs("Loaded 0")
+  {
+  if (PauseGameOnWorldLoad)
+  WinGetTitle, McTitle, Minecraft
+  if (InStr(McTitle, "-")) {
+  onpreview := 0
+  ControlSend,, {F3 down}{Esc}{F3 up}, Minecraft*
+  SetTimer, waitForGame, Off
+  }
+  else if (PauseGameOnWorldLoad == False)
+  ResetSettingsOnWorldLoad()
+  }
 }
+
 
 CheckPreview()
 {
@@ -137,6 +148,7 @@ Move()
 
 Attempts()
 {
+   if (countAttempts) ; broken
    FileRead, wv, attempts.txt
    if errorlevel
    wv := 0
@@ -166,19 +178,18 @@ Reset()
       ResetSound()
    }
    Else {
-      ResetSettings()
-      Sleep, 890
+      if (onpreview == 0) ResetSettings()
+      Sleep, 690
       Send, {Blind}{Esc}+{Tab}{Enter}
       if (ResetSounds)
       ResetSound()
-   }
+  }
 }
 
 
 Setup()
 {  
-   Sleep, %freezingWaitingDelay%
-   SetTimer, waitForGame, Off
+   SetTimer, waitForGame, On
    Loop
    {
       if (A_NowUTC - lastReset >= 20)
@@ -203,48 +214,10 @@ Setup()
 }
 
 ResetSettingsOnWorldLoad() {
-    GetSettings()
-    fovPresses := (110 - FOV) * 143 / 80
-    renderPresses := (32 - renderDistance) * 143 / 30
-    entityPresses := (5 - entityDistance) * 143 / 4.5
-    SetKeyDelay, 1
-    if (FOV != (options.fov * 40 + 70) || renderDistance != options.renderDistance || entityDistance != options.entityDistanceScaling) {
-        ControlSend,, {Blind}{Esc}{Tab 6}{Enter}{Tab}, Minecraft*
-        if (FOV != currentFOV) {
-            SetKeyDelay, 0
-            ControlSend,, {Blind}{Right 143}, Minecraft*
-            ControlSend,, {Blind}{Left %fovPresses%}, Minecraft*
-            SetKeyDelay, 1
-        }
-        ControlSend,, {Blind}{Tab 5}{Enter}{Tab 4}, Minecraft*
-        if (renderDistance != currentRenderDistance) {
-            SetKeyDelay, 0
-            ControlSend,, {Blind}{Right 143}, Minecraft*
-            ControlSend,, {Blind}{Left %renderPresses%}, Minecraft*
-            SetKeyDelay, 1
-        }
-        if (entityDistance != currentEntityDistance) {
-            ControlSend,, {Blind}{Tab 13}, Minecraft*
-            SetKeyDelay, 0
-            ControlSend,, {Blind}{Right 143}, Minecraft*
-            ControlSend,, {Blind}{Left %entityPresses%}, Minecraft*
-            ControlSend,, {Blind}{Esc}, Minecraft*
-        }
-        ControlSend,, {Blind}{Esc}, Minecraft*
-    }
-    SetKeyDelay, 0
-    SensPresses := ceil(mouseSensitivity/1.408)
-    ControlSend,, {Blind}{Esc}{Tab 6}{enter}{Tab 7}{enter}{tab}{enter}{tab}{Left 150}{Right %SensPresses%}{Esc 3}, Minecraft*
-    Sleep, 200
-    ControlSend,, {F3 down}{Esc}{F3 up}, Minecraft*
-}
-
-
-ResetSettings() {
     global performanceMethod, lowRender, renderDistance, entityDistance, FOV
     GetSettings()
     fovPresses := (110 - FOV) * 143 / 80
-    desiredRd := performanceMethod == "S" ? lowRender : renderDistance
+    desiredRd := performanceMethod == "S" && currentState == STATE_PLAYING ? renderDistance : lowRender
     renderPresses := desiredRd - 2
     entityPresses := (5 - entityDistance) * 143 / 4.5
     SetKeyDelay, 0
@@ -265,9 +238,41 @@ ResetSettings() {
             ControlSend,, {Blind}{Left %entityPresses%}, Minecraft*
         }
         ControlSend,, {Blind}{Esc 2}, Minecraft*
+}
+    SetKeyDelay, 0
+    SensPresses := ceil(mouseSensitivity/1.408)
+    ControlSend,, {Blind}{Esc}{Tab 6}{enter}{Tab 7}{enter}{tab}{enter}{tab}{Left 150}{Right %SensPresses%}{Esc 3}, Minecraft*
+    Sleep, 200
+    ControlSend,, {F3 down}{Esc}{F3 up}, Minecraft*
+}
+
+ResetSettings() {
+    global performanceMethod, lowRender, renderDistance, entityDistance, FOV
+    GetSettings()
+    fovPresses := (110 - FOV) * 143 / 80
+    desiredRd := performanceMethod == "S" && currentState == STATE_PLAYING ? lowRender : renderDistance
+    renderPresses := desiredRd - 2
+    entityPresses := (5 - entityDistance) * 143 / 4.5
+    SetKeyDelay, 0
+    if (desiredRd != settings.renderDistance) {
+        ControlSend,, {Blind}{Shift down}{F3 down}{F 32}{F3 up}{Shift up}, Minecraft*
+        ControlSend,, {Blind}{F3 down}{F %renderPresses%}{D}{F3 up}, Minecraft*
     }
-
-
+    if (FOV != (settings.fov * 40 + 70) || entityDistance != settings.entityDistanceScaling) {
+        ControlSend,, {Blind}{Esc}{Tab 6}{Enter}{Tab}, Minecraft*
+        if (FOV != currentFOV) {
+            ControlSend,, {Blind}{Right 143}, Minecraft*
+            ControlSend,, {Blind}{Left %fovPresses%}, Minecraft*
+        }
+        if (entityDistance != settings.entityDistanceScaling) {
+            ControlSend,, {Blind}{Tab 5}{Enter}{Tab 17}, Minecraft*
+            SetKeyDelay, 0
+            ControlSend,, {Blind}{Right 143}, Minecraft*
+            ControlSend,, {Blind}{Left %entityPresses%}, Minecraft*
+        }
+        ControlSend,, {Blind}{Esc 2}, Minecraft*
+}
+    SetKeyDelay, 0
     SensPresses := ceil(mouseSensitivity/1.408)
     ControlSend,, {Blind}{Esc}{Tab 6}{enter}{Tab 7}{enter}{tab}{enter}{tab}{Left 150}{Right %SensPresses%}{Esc 3}, Minecraft*
 }
@@ -349,20 +354,18 @@ waitForGame:
    }
    if (CheckJoinedWorld() && onpreview)
    {
-      ResetSettingsOnWorldLoad()
       onpreview := False
       SetTimer, waitForGame, Off
    }
    return
 
 SetTimer, waitForGame, Off
-#IfWinExist, Minecraft*
+#IfWinActive, Minecraft*
 {
    U::
    Reset()
    Setup()
    Move()
-   Attempts()
    return
 
    ^J::
